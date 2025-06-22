@@ -3,123 +3,127 @@
 namespace App\Http\Controllers;
 
 use App\Models\Prediction;
-use Http;
 use Illuminate\Http\Request;
-use Storage;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 class PredictionController extends Controller
 {
-        private $classLabels = [
-            0 => 'Bersih',
-            1 => 'Sedang', 
-            2 => 'Keruh'
-        ];
-    
-        public function index()
-        {
-            $predictions = Prediction::latest()->paginate(10);
-            return view('index', compact('predictions'));
-        }
-    
-        public function store(Request $request)
-        {
-            $request->validate([
-                'photo' => 'required|image|mimes:jpeg,png,jpg|max:2048'
-            ], [
-                'photo.required' => 'Foto harus diupload',
-                'photo.image' => 'File harus berupa gambar',
-                'photo.mimes' => 'Format gambar harus jpeg, png, atau jpg',
-                'photo.max' => 'Ukuran gambar maksimal 2MB'
-            ]);
-    
-            try {
-                $apiUrl = env('MODEL_API');
+    public function index()
+    {
+        $predictions = Prediction::latest()->paginate(10);
+        return view('predictions.index', compact('predictions'));
+    }
 
-                if (!$apiUrl) {
-                    abort(500, 'API URL tidak dikonfigurasi.');
-                }
+    public function create()
+    {
+        return view('predictions.create');
+    }
 
-                // Simpan file ke storage
-                $file = $request->file('photo');
-                $filename = time() . '_' . $file->getClientOriginalName();
-                $storedPath = $file->storeAs('photos', $filename, 'public');
+    public function store(Request $request)
+    {
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+        ], [
+            'photo.required' => 'Foto harus diupload',
+            'photo.image' => 'File harus berupa gambar',
+            'photo.mimes' => 'Format gambar harus jpeg, png, atau jpg',
+            'photo.max' => 'Ukuran gambar maksimal 2MB'
+        ]);
+
+        try {
+            $apiUrl = env('MODEL_API');
+
+            if (!$apiUrl) {
+                return back()->with('error', 'API URL tidak dikonfigurasi.');
+            }
+
+            // Simpan file ke storage
+            $file = $request->file('photo');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $storedPath = $file->storeAs('photos', $filename, 'public');
+            
+            // Kirim ke API untuk prediksi
+            $response = Http::attach(
+                'file', 
+                file_get_contents($file->getRealPath()), 
+                $filename
+            )->post($apiUrl);
+
+            if ($response->successful()) {
+                $apiData = $response->json();
                 
-                // Kirim ke API untuk prediksi
-                $response = Http::attach(
-                    'file', 
-                    file_get_contents($file->getRealPath()), 
-                    $filename
-                )->post($apiUrl);
-    
-                if ($response->successful()) {
-                    $apiData = $response->json();
-                    dd($response);
-                    // Proses hasil prediksi
-                    $processedResult = $this->processApiResponse($apiData);
+                // Proses hasil prediksi
+                $processedResult = $this->processApiResponse($apiData);
 
-                    // Simpan hasil ke database
-                    $prediction = Prediction::create([
-                        'image_path' => $storedPath,
-                        'filename' => $filename,
-                        'result' => json_encode($apiData), // Raw API response
-                        'status' => 'success',
-                        'confidence' => $processedResult['confidence'],
-                        'prediction_class' => $processedResult['class'],
-                        'prediction_index' => $processedResult['index'],
-                        'class_probabilities' => json_encode($processedResult['probabilities']),
-                    ]);
-    
-                    return redirect()->route('predictions.index')
-                        ->with('success', 'Deteksi berhasil dilakukan!')
-                        ->with('prediction_data', $processedResult)
-                        ->with('prediction_id', $prediction->id);
-                } else {
-                    return back()->with('error', 'Gagal melakukan prediksi. Silakan coba lagi.');
+                // Jika predicted_class = 0, anggap sebagai gagal upload
+                if ($processedResult['predicted_class'] == 0) {
+                    // Hapus file karena foto tidak sesuai
+                    Storage::disk('public')->delete($storedPath);
+                    return back()->with('error', 'Gagal upload foto. Foto tidak sesuai untuk deteksi air.');
                 }
-    
-            } catch (\Exception $e) {
-                return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
-            }
-        }
-    
-        private function processApiResponse($apiData)
-        {
-            $predictedClass = $apiData['predicted_class'][0] ?? [];
-            $confidenceScore = $apiData['confidence_score'] ?? '0%';
-            
-            // Cari index dengan nilai probabilitas tertinggi
-            $maxProbability = max($predictedClass);
-            $predictedIndex = array_search($maxProbability, $predictedClass);
-            
-            // Konversi confidence score dari string ke float
-            $confidence = (float) str_replace('%', '', $confidenceScore);
-            
-            return [
-                'class' => $this->classLabels[$predictedIndex] ?? 'Unknown',
-                'index' => $predictedIndex,
-                'confidence' => $confidence,
-                'probabilities' => $predictedClass,
-                'raw_confidence' => $confidenceScore
-            ];
-        }
-    
-        public function show(Prediction $prediction)
-        {
-            return view('show', compact('prediction'));
-        }
-    
-        public function destroy(Prediction $prediction)
-        {
-            // Hapus file dari storage
-            if (Storage::disk('public')->exists($prediction->image_path)) {
-                Storage::disk('public')->delete($prediction->image_path);
-            }
-    
-            $prediction->delete();
-    
-            return redirect()->route('predictions.index')
-                ->with('success', 'Data prediksi berhasil dihapus');
-        }
-    
-}
 
+                // Simpan hasil ke database hanya jika berhasil
+                $prediction = Prediction::create([
+                    'image_path' => $storedPath,
+                    'predicted_class' => $processedResult['predicted_class'],
+                    'water_quality' => $processedResult['water_quality']
+                ]);
+
+                return redirect()->route('predictions.show', $prediction->id)
+                    ->with('success', 'Deteksi berhasil dilakukan!');
+            } else {
+                // Hapus file jika API gagal
+                Storage::disk('public')->delete($storedPath);
+                return back()->with('error', 'Gagal melakukan prediksi. Silakan coba lagi.');
+            }
+
+        } catch (\Exception $e) {
+            // Hapus file jika terjadi error
+            if (isset($storedPath)) {
+                Storage::disk('public')->delete($storedPath);
+            }
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    public function show(Prediction $prediction)
+    {
+        return view('predictions.show', compact('prediction'));
+    }
+
+    public function destroy(Prediction $prediction)
+    {
+        // Hapus file gambar
+        Storage::disk('public')->delete($prediction->image_path);
+        
+        // Hapus record dari database
+        $prediction->delete();
+
+        return redirect()->route('predictions.index')
+            ->with('success', 'Data prediksi berhasil dihapus!');
+    }
+
+    private function processApiResponse($apiData)
+    {
+        $predictedClass = $apiData['predicted_class'];
+        
+        // Tentukan kualitas air berdasarkan predicted_class
+        switch ($predictedClass) {
+            case 0:
+                $waterQuality = 'Gagal';
+                break;
+            case 1:
+                $waterQuality = 'Kotor';
+                break;
+                default:
+                $waterQuality = 'Bersih';
+                break;
+        }
+
+        return [
+            'predicted_class' => $predictedClass,
+            'water_quality' => $waterQuality
+        ];
+    }
+}

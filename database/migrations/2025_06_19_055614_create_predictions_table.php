@@ -14,11 +14,8 @@ return new class extends Migration
         Schema::create('predictions', function (Blueprint $table) {
             $table->id();
             $table->string('image_path');
-            $table->string('filename');
-            $table->json('result')->nullable();
-            $table->string('status')->default('pending');
-            $table->decimal('confidence', 5, 2)->nullable();
-            $table->string('prediction_class')->nullable();
+            $table->integer('predicted_class');
+            $table->string('water_quality'); // 'Bersih', 'Kotor', atau 'Gagal'
             $table->timestamps();
         });
     }
