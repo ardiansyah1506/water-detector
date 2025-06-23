@@ -14,53 +14,50 @@
             </div>
             <div class="card-body">
                 <div class="row">
+                    <!-- Gambar -->
                     <div class="col-md-6">
                         <h5 class="mb-3">Gambar yang Dianalisis:</h5>
                         <div class="text-center">
                             <img src="{{ $prediction->image_url }}" alt="Foto Air" class="img-fluid rounded shadow" style="max-height: 400px;">
                         </div>
                     </div>
+
+                    <!-- Hasil Analisis -->
                     <div class="col-md-6">
                         <h5 class="mb-3">Hasil Analisis:</h5>
-                        
-                        <div class="card bg-light mb-3 bg-success">
+
+                        <div class="card mb-3 border-0 bg-light shadow-sm">
                             <div class="card-body text-center">
                                 <div class="mb-4">
-                                    <i class="{{ $prediction->status_icon }} fa-4x {{ $prediction->predicted_class == 2 ? 'text-success' : 'text-danger' }}"></i>
+                                    <i class="{{ $prediction->status_icon }} fa-4x {{ $prediction->water_quality_color }}"></i>
                                 </div>
                                 <h2 class="mb-3">
-                                    <span class="badge {{ $prediction->predicted_class == 2 ? 'bg-success' : 'bg-danger' }} fs-4">
+                                    <span class="badge {{ $prediction->water_quality_badge_class }} fs-4">
                                         {{ $prediction->water_quality_label }}
                                     </span>
                                 </h2>
-                                <div class="row">
-                                    <div class="col-12">
-                                        <h6 class="text-muted mb-1">Kelas Prediksi</h6>
-                                        <h4 class="text-info mb-0">{{ $prediction->predicted_class }}</h4>
-                                    </div>
-                                </div>
+                                <h6 class="text-muted mb-1">Kelas Prediksi</h6>
+                                <h4 class="text-info mb-0">{{ $prediction->predicted_class }}</h4>
                             </div>
                         </div>
 
-                        <div class="alert {{ $prediction->predicted_class == 2 ? 'alert-success' : 'alert-danger' }}">
+                        <!-- Interpretasi -->
+                        <div class="alert {{ $prediction->interpretation_alert_class }}">
                             <h6 class="alert-heading">
                                 <i class="{{ $prediction->status_icon }} me-2"></i>
                                 Interpretasi Hasil:
                             </h6>
-                            @if($prediction->predicted_class == 1)
-                            <p class="mb-0">Air terdeteksi dalam kondisi <strong>kotor</strong>. Disarankan untuk melakukan treatment sebelum digunakan.</p>
-                            @else
-                            <p class="mb-0">Air terdeteksi dalam kondisi <strong>bersih</strong>. Air ini kemungkinan aman untuk digunakan.</p>
-                            @endif
+                            <p class="mb-0">{{ $prediction->interpretation_message }}</p>
                         </div>
 
+                        <!-- Info tambahan -->
                         <div class="card">
                             <div class="card-body">
                                 <h6 class="card-title">Informasi Tambahan:</h6>
                                 <ul class="list-unstyled mb-0">
                                     <li><i class="fas fa-calendar me-2 text-muted"></i>Tanggal: {{ $prediction->created_at->format('d/m/Y H:i') }}</li>
                                     <li><i class="fas fa-hashtag me-2 text-muted"></i>ID Prediksi: #{{ $prediction->id }}</li>
-                                    <li><i class="fas fa-tag me-2 text-muted"></i>Status: {{ $prediction->water_quality }}</li>
+                                    <li><i class="fas fa-tag me-2 text-muted"></i>Status: {{ $prediction->water_quality_label }}</li>
                                 </ul>
                             </div>
                         </div>

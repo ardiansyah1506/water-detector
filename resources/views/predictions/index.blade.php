@@ -20,30 +20,39 @@
 <!-- Statistik Ringkas -->
 @if($predictions->total() > 0)
     <div class="row mb-4">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card bg-success text-white">
                 <div class="card-body text-center">
                     <i class="fas fa-check-circle fa-2x mb-2"></i>
-                    <h4>{{ $predictions->where('predicted_class', 1)->count() }}</h4>
+                    <h4>{{ $predictions->where('predicted_class', 0)->count() }}</h4>
                     <small>Air Bersih</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-water fa-2x mb-2"></i>
+                    <h4>{{ $predictions->where('predicted_class', 1)->count() }}</h4>
+                    <small>Air Keruh</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
             <div class="card bg-danger text-white">
                 <div class="card-body text-center">
                     <i class="fas fa-times-circle fa-2x mb-2"></i>
-                    <h4>{{ $predictions->where('predicted_class', '>', 1)->count() }}</h4>
+                    <h4>{{ $predictions->where('predicted_class', 2)->count() }}</h4>
                     <small>Air Kotor</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card bg-info text-white">
+        <div class="col-md-3">
+            <div class="card bg-secondary text-white">
                 <div class="card-body text-center">
-                    <i class="fas fa-chart-bar fa-2x mb-2"></i>
-                    <h4>{{ $predictions->count() }}</h4>
-                    <small>Total Halaman Ini</small>
+                    <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                    <h4>{{ $predictions->where('predicted_class', 3)->count() }}</h4>
+                    <small>Foto Tidak Sesuai</small>
                 </div>
             </div>
         </div>

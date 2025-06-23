@@ -57,11 +57,12 @@ class PredictionController extends Controller
                 $processedResult = $this->processApiResponse($apiData);
 
                 // Jika predicted_class = 0, anggap sebagai gagal upload
-                if ($processedResult['predicted_class'] == 0) {
-                    // Hapus file karena foto tidak sesuai
+                if ($processedResult['predicted_class'] == 3) {
+                    // Foto tidak sesuai
                     Storage::disk('public')->delete($storedPath);
                     return back()->with('error', 'Gagal upload foto. Foto tidak sesuai untuk deteksi air.');
                 }
+                
 
                 // Simpan hasil ke database hanya jika berhasil
                 $prediction = Prediction::create([
@@ -105,25 +106,30 @@ class PredictionController extends Controller
     }
 
     private function processApiResponse($apiData)
-    {
-        $predictedClass = $apiData['predicted_class'];
-        
-        // Tentukan kualitas air berdasarkan predicted_class
-        switch ($predictedClass) {
-            case 0:
-                $waterQuality = 'Gagal';
-                break;
-            case 1:
-                $waterQuality = 'Kotor';
-                break;
-                default:
-                $waterQuality = 'Bersih';
-                break;
-        }
-
-        return [
-            'predicted_class' => $predictedClass,
-            'water_quality' => $waterQuality
-        ];
+{
+    $predictedClass = $apiData['predicted_class'];
+    
+    // Tentukan kualitas air berdasarkan predicted_class
+    switch ($predictedClass) {
+        case 0:
+            $waterQuality = 'Bersih';
+            break;
+        case 1:
+            $waterQuality = 'Keruh';
+            break;
+        case 2:
+            $waterQuality = 'Kotor';
+            break;
+        case 3:
+        default:
+            $waterQuality = 'Foto Tidak Sesuai';
+            break;
     }
+
+    return [
+        'predicted_class' => $predictedClass,
+        'water_quality' => $waterQuality
+    ];
+}
+
 }
