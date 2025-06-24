@@ -23,12 +23,12 @@ class PredictionController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'photo' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+            'photo' => 'required|image|mimes:jpeg,png,jpg|max:10048'
         ], [
             'photo.required' => 'Foto harus diupload',
             'photo.image' => 'File harus berupa gambar',
             'photo.mimes' => 'Format gambar harus jpeg, png, atau jpg',
-            'photo.max' => 'Ukuran gambar maksimal 2MB'
+            'photo.max' => 'Ukuran gambar maksimal 10MB'
         ]);
 
         try {
