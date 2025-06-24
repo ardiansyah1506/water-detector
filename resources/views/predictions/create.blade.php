@@ -35,7 +35,7 @@
                             <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
                             <h5 class="text-muted">Klik atau seret foto ke sini</h5>
                             <p class="text-muted mb-0">Format: JPEG, PNG, JPG (Maks. 2MB)</p>
-                            <input type="file" name="photo" id="photo" class="d-none" accept="image/*" required>
+                            <input type="file" name="photo" id="photo" class="d-none" accept="image/*" capture="environment" required>
                         </div>
                         @error('photo')
                             <div class="text-danger mt-2">
