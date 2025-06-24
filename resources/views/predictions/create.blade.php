@@ -160,8 +160,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Validate file size (2MB)
-            if (file.size > 10 * 1024 * 1024) {
-                showAlert('Ukuran file maksimal 2MB!', 'danger');
+            if (file.size > 50 * 1024 * 1024) {
+                showAlert('Ukuran file maksimal 50MB!', 'danger');
                 resetForm();
                 return;
             }
