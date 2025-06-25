@@ -27,7 +27,6 @@ class PredictionController extends Controller
         ], [
             'photo.required' => 'Foto harus diupload',
             'photo.image' => 'File harus berupa gambar',
-            'photo.mimes' => 'Format gambar harus jpeg, png, atau jpg',
             'photo.max' => 'Ukuran gambar maksimal 50MB'
         ]);
 
@@ -42,15 +41,23 @@ class PredictionController extends Controller
             $file = $request->file('photo');
             $filename = time() . '_' . $file->getClientOriginalName();
             $storedPath = $file->storeAs('photos', $filename, 'public');
+            \Log::info('Mengirim file ke API:', [
+                'path' => $file->getPathname(),
+                'size' => $file->getSize(),
+                'api_url' => $apiUrl
+            ]);
             
             // Kirim ke API untuk prediksi
             $response = Http::attach(
                 'file', 
-                file_get_contents($file->getRealPath()), 
+                fopen($file->getPathname(), 'r'),  // <== GANTI DI SINI
                 $filename
             )->post($apiUrl);
-
-            if ($response->successful()) {
+            \Log::info('Response API:', [
+                'status' => $response->status(),
+                'body' => $response->body()
+            ]);
+                        if ($response->successful()) {
                 $apiData = $response->json();
                 
                 // Proses hasil prediksi
