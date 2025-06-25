@@ -47,7 +47,7 @@
                                 <i class="{{ $prediction->status_icon }} me-2"></i>
                                 Interpretasi Hasil:
                             </h6>
-                            <p class="mb-0">{{ $prediction->interpretation_message }}</p>
+                            <p class="mb-0">{!! $prediction->interpretation_message !!}</p>
                         </div>
 
                         <!-- Info tambahan -->
